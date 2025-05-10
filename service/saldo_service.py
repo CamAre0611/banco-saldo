@@ -7,20 +7,27 @@ class SaldoService:
         self.log_path = log_path
 
     def get_saldo(self, username):
-        print(f"Buscando saldo para: {username}")
-        if not os.path.exists(self.saldos_path):
-            print("Archivo saldos.txt no encontrado.")
+        print("DEBUG: Leyendo archivo de saldos en:", self.ruta_saldos)
+        if not os.path.exists(self.ruta_saldos):
+            print("ERROR: Archivo no encontrado.")
             return None
 
-        with open(self.saldos_path, 'r', encoding='utf-8') as f:
-            for line in f:
-                print(f"Línea leída: {line.strip()}")
+        with open(self.ruta_saldos, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            print("DEBUG: Contenido del archivo:")
+            for line in lines:
+                print(f"-> '{line.strip()}'")
+
+            for line in lines:
                 parts = line.strip().split(',')
                 if len(parts) == 2 and parts[0] == username:
                     try:
                         return float(parts[1])
                     except ValueError:
+                        print("ERROR: Valor inválido de saldo")
                         return None
+
+        print(f"Usuario '{username}' no encontrado en archivo.")
         return None
 
     def update_saldo(self, username, nuevo_saldo):
