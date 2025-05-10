@@ -2,9 +2,9 @@ import os
 from datetime import datetime
 
 class SaldoService:
-    def __init__(self, saldos_path, log_path):
-        self.saldos_path = saldos_path
-        self.log_path = log_path
+    def __init__(self, ruta_saldos, ruta_log):
+        self.ruta_saldos = ruta_saldos
+        self.ruta_log = ruta_log
 
     def get_saldo(self, username):
         print(f"DEBUG: Buscando saldo para '{username}'")
