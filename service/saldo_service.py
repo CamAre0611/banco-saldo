@@ -2,47 +2,70 @@ import os
 from datetime import datetime
 
 class SaldoService:
-    def __init__(self, ruta_saldos, ruta_log):
-        self.ruta_saldos = ruta_saldos
-        self.ruta_log = ruta_log
-
-    def get_saldos(self):
-        saldos = {}
-        if os.path.exists(self.ruta_saldos):
-            with open(self.ruta_saldos, 'r', encoding='utf-8') as f:
-                for linea in f:
-                    partes = linea.strip().split(',')
-                    if len(partes) == 2:
-                        saldos[partes[0]] = float(partes[1])
-        return saldos
-
-    def save_saldos(self, saldos):
-        with open(self.ruta_saldos, 'w', encoding='utf-8') as f:
-            for usuario, saldo in saldos.items():
-                f.write(f"{usuario},{saldo}\n")
-
-    def registrar_log(self, username, operacion, monto):
-        with open(self.ruta_log, 'a', encoding='utf-8') as f:
-            f.write(f"{datetime.now()} - {username} - {operacion} - {monto}\n")
+    def __init__(self, saldos_path, log_path):
+        self.saldos_path = saldos_path
+        self.log_path = log_path
 
     def get_saldo(self, username):
-        saldos = self.get_saldos()
-        return saldos.get(username)
-
-    def agregar_saldo(self, username, monto):
-        saldos = self.get_saldos()
-        if username not in saldos:
+        print(f"Buscando saldo para: {username}")
+        if not os.path.exists(self.saldos_path):
+            print("Archivo saldos.txt no encontrado.")
             return None
-        saldos[username] += monto
-        self.save_saldos(saldos)
-        self.registrar_log(username, "ingreso", monto)
-        return saldos[username]
 
-    def retirar_saldo(self, username, monto):
-        saldos = self.get_saldos()
-        if username not in saldos or saldos[username] < monto:
-            return None
-        saldos[username] -= monto
-        self.save_saldos(saldos)
-        self.registrar_log(username, "retiro", monto)
-        return saldos[username]
+        with open(self.saldos_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                print(f"Línea leída: {line.strip()}")
+                parts = line.strip().split(',')
+                if len(parts) == 2 and parts[0] == username:
+                    try:
+                        return float(parts[1])
+                    except ValueError:
+                        return None
+        return None
+
+    def update_saldo(self, username, nuevo_saldo):
+        if not os.path.exists(self.saldos_path):
+            return False
+
+        actualizado = False
+        lineas = []
+        with open(self.saldos_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                parts = line.strip().split(',')
+                if len(parts) == 2 and parts[0] == username:
+                    lineas.append(f"{username},{nuevo_saldo}\n")
+                    actualizado = True
+                else:
+                    lineas.append(line)
+
+        if actualizado:
+            with open(self.saldos_path, 'w', encoding='utf-8') as f:
+                f.writelines(lineas)
+            return True
+        return False
+
+    def registrar_log(self, username, accion, monto):
+        fecha = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        log_line = f"{fecha} - {username} - {accion} - {monto}\n"
+        with open(self.log_path, 'a', encoding='utf-8') as f:
+            f.write(log_line)
+
+    def ingresar(self, username, monto):
+        saldo_actual = self.get_saldo(username)
+        if saldo_actual is None:
+            return False
+        nuevo_saldo = saldo_actual + monto
+        if self.update_saldo(username, nuevo_saldo):
+            self.registrar_log(username, "ingreso", monto)
+            return True
+        return False
+
+    def retirar(self, username, monto):
+        saldo_actual = self.get_saldo(username)
+        if saldo_actual is None or saldo_actual < monto:
+            return False
+        nuevo_saldo = saldo_actual - monto
+        if self.update_saldo(username, nuevo_saldo):
+            self.registrar_log(username, "retiro", monto)
+            return True
+        return False
