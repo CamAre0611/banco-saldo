@@ -1,0 +1,1 @@
+[2025-05-09 01:20:46] camila - INGRESO - monto: 2000 - nuevo saldo: 5000.0 - Ubicación: (4.710989, -74.072092)
