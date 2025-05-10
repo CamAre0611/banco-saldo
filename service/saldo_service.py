@@ -7,27 +7,36 @@ class SaldoService:
         self.log_path = log_path
 
     def get_saldo(self, username):
-        print("DEBUG: Leyendo archivo de saldos en:", self.ruta_saldos)
+        print(f"DEBUG: Buscando saldo para '{username}'")
+        print("DEBUG: Ruta del archivo:", self.ruta_saldos)
+
         if not os.path.exists(self.ruta_saldos):
-            print("ERROR: Archivo no encontrado.")
+            print("ERROR: Archivo no existe.")
             return None
 
-        with open(self.ruta_saldos, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-            print("DEBUG: Contenido del archivo:")
-            for line in lines:
-                print(f"-> '{line.strip()}'")
+        try:
+            with open(self.ruta_saldos, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+                print("DEBUG: Contenido del archivo:")
+                for i, line in enumerate(lines):
+                    print(f"Línea {i + 1}: '{line.strip()}'")
 
-            for line in lines:
-                parts = line.strip().split(',')
-                if len(parts) == 2 and parts[0] == username:
-                    try:
-                        return float(parts[1])
-                    except ValueError:
-                        print("ERROR: Valor inválido de saldo")
-                        return None
+                for line in lines:
+                    parts = line.strip().split(',')
+                    if len(parts) == 2:
+                        nombre, saldo_str = parts
+                        print(f"-> Comparando '{nombre}' con '{username}'")
+                        if nombre == username:
+                            saldo = float(saldo_str.strip())
+                            print(f"Encontrado: {nombre} con saldo {saldo}")
+                            return saldo
+                    else:
+                        print(f"Formato inválido en línea: '{line.strip()}'")
 
-        print(f"Usuario '{username}' no encontrado en archivo.")
+        except Exception as e:
+            print("ERROR durante lectura del archivo:", str(e))
+
+        print(f"Usuario '{username}' no encontrado.")
         return None
 
     def update_saldo(self, username, nuevo_saldo):
