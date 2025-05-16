@@ -88,9 +88,9 @@ def ingresar_saldo(username):
     data = request.get_json()
     logger.debug(f"Datos recibidos: {data}")
 
-    if "monto" not in data or "time" not in data or "location" not in data:
+    if "monto" not in data:
         logger.error(f"Faltan campos obligatorios en la solicitud para {username}")
-        return jsonify({"error": "Faltan campos obligatorios (monto, time, location)"}), 400
+        return jsonify({"error": "Faltan campos obligatorios (monto)"}), 400
 
     try:
         monto = float(data["monto"])
@@ -99,10 +99,8 @@ def ingresar_saldo(username):
             return jsonify({"error": "Monto debe ser mayor a 0"}), 400
         usuarios[username]["saldo"] += monto
         nuevo_saldo = usuarios[username]["saldo"]
-        time = data["time"]
-        location = data["location"]
 
-        log_entry = f"[{time}] {username} - INGRESO - monto: {monto} - nuevo saldo: {nuevo_saldo} - Ubicación: {location}\n"
+        log_entry = f"{username} - INGRESO - monto: {monto} - nuevo saldo: {nuevo_saldo}\n"
         with open(LOG_FILE, 'a') as log_file:
             log_file.write(log_entry)
 
@@ -128,9 +126,9 @@ def retirar_saldo(username):
     data = request.get_json()
     logger.debug(f"Datos recibidos: {data}")
 
-    if "monto" not in data or "time" not in data or "location" not in data:
+    if "monto" not in data:
         logger.error(f"Faltan campos obligatorios en la solicitud para {username}")
-        return jsonify({"error": "Faltan campos obligatorios (monto, time, location)"}), 400
+        return jsonify({"error": "Faltan campos obligatorios (monto)"}), 400
 
     try:
         monto = float(data["monto"])
@@ -142,10 +140,8 @@ def retirar_saldo(username):
             return jsonify({"error": "Saldo insuficiente"}), 400
         usuarios[username]["saldo"] -= monto
         nuevo_saldo = usuarios[username]["saldo"]
-        time = data["time"]
-        location = data["location"]
 
-        log_entry = f"[{time}] {username} - RETIRO - monto: {monto} - nuevo saldo: {nuevo_saldo} - Ubicación: {location}\n"
+        log_entry = f"{username} - RETIRO - monto: {monto} - nuevo saldo: {nuevo_saldo}\n"
         with open(LOG_FILE, 'a') as log_file:
             log_file.write(log_entry)
 
