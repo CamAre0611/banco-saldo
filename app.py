@@ -4,7 +4,6 @@ import os
 
 app = Flask(__name__)
 
-# Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -15,12 +14,64 @@ usuarios = {
     "viviana": {"password": "1234", "rol": "usuario", "saldo": 0.0}
 }
 
-# Path to log file
 LOG_FILE = os.path.join("saldo", "database", "log.txt")
+
+@app.route('/auth/login', methods=['POST'])
+def login():
+    if not request.is_json:
+        logger.error("Solicitud no contiene JSON válido")
+        return jsonify({"message": "Solicitud no contiene JSON válido"}), 400
+
+    data = request.get_json()
+    logger.debug(f"Datos recibidos: {data}")
+
+    if "username" not in data or "password" not in data:
+        logger.error("Faltan campos obligatorios en la solicitud de login")
+        return jsonify({"message": "Faltan campos obligatorios (username, password)"}), 400
+
+    username = data["username"]
+    password = data["password"]
+
+    if username not in usuarios:
+        logger.error(f"Usuario {username} no encontrado")
+        return jsonify({"message": "Usuario no encontrado"}), 404
+
+    if usuarios[username]["password"] != password:
+        logger.error(f"Contraseña incorrecta para {username}")
+        return jsonify({"message": "Contraseña incorrecta"}), 401
+
+    logger.info(f"Login exitoso para {username}")
+    return jsonify({"username": username, "rol": usuarios[username]["rol"]}), 200
+
+@app.route('/auth/registro', methods=['POST'])
+def registrar_usuario():
+    if not request.is_json:
+        logger.error("Solicitud no contiene JSON válido")
+        return jsonify({"error": "Solicitud no contiene JSON válido"}), 400
+
+    data = request.get_json()
+    logger.debug(f"Datos recibidos: {data}")
+
+    if "username" not in data or "password" not in data or "rol" not in data:
+        logger.error("Faltan campos obligatorios en la solicitud de registro")
+        return jsonify({"error": "Faltan campos obligatorios (username, password, rol)"}), 400
+
+    username = data["username"]
+    password = data["password"]
+    rol = data["rol"]
+
+    if username in usuarios:
+        logger.error(f"Usuario {username} ya existe")
+        return jsonify({"error": "Usuario ya existe"}), 400
+
+    usuarios[username] = {"password": password, "rol": rol, "saldo": 0.0}
+    logger.info(f"Usuario {username} registrado exitosamente")
+    return "", 200
 
 @app.route('/saldo/<username>', methods=['GET'])
 def get_saldo(username):
     if username not in usuarios:
+        logger.error(f"Usuario {username} no encontrado")
         return jsonify({"error": "Usuario no encontrado"}), 404
     return jsonify({"saldo": usuarios[username]["saldo"]}), 200
 
@@ -51,7 +102,6 @@ def ingresar_saldo(username):
         time = data["time"]
         location = data["location"]
 
-        # Log to file
         log_entry = f"[{time}] {username} - INGRESO - monto: {monto} - nuevo saldo: {nuevo_saldo} - Ubicación: {location}\n"
         with open(LOG_FILE, 'a') as log_file:
             log_file.write(log_entry)
@@ -95,7 +145,6 @@ def retirar_saldo(username):
         time = data["time"]
         location = data["location"]
 
-        # Log to file
         log_entry = f"[{time}] {username} - RETIRO - monto: {monto} - nuevo saldo: {nuevo_saldo} - Ubicación: {location}\n"
         with open(LOG_FILE, 'a') as log_file:
             log_file.write(log_entry)
@@ -108,25 +157,6 @@ def retirar_saldo(username):
     except Exception as e:
         logger.error(f"Error inesperado al retirar saldo para {username}: {str(e)}")
         return jsonify({"error": "Error al procesar la solicitud"}), 500
-
-@app.route('/movimientos/<username>', methods=['GET'])
-def get_movimientos(username):
-    if username not in usuarios:
-        logger.error(f"Usuario {username} no encontrado")
-        return jsonify({"error": "Usuario no encontrado"}), 404
-
-    try:
-        with open(LOG_FILE, 'r') as log_file:
-            lines = log_file.readlines()
-            # Filter lines for the specific user
-            user_movements = [line.strip() for line in lines if line.startswith(f"[{time}") and username in line]
-        return jsonify({"movimientos": user_movements}), 200
-    except FileNotFoundError:
-        logger.error(f"Archivo de log no encontrado: {LOG_FILE}")
-        return jsonify({"error": "Archivo de movimientos no encontrado"}), 404
-    except Exception as e:
-        logger.error(f"Error al leer los movimientos para {username}: {str(e)}")
-        return jsonify({"error": "Error al leer los movimientos"}), 500
 
 if __name__ == '__main__':
     if not os.path.exists("saldo/database"):
