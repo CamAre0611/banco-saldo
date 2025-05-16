@@ -109,6 +109,25 @@ def retirar_saldo(username):
         logger.error(f"Error inesperado al retirar saldo para {username}: {str(e)}")
         return jsonify({"error": "Error al procesar la solicitud"}), 500
 
+@app.route('/movimientos/<username>', methods=['GET'])
+def get_movimientos(username):
+    if username not in usuarios:
+        logger.error(f"Usuario {username} no encontrado")
+        return jsonify({"error": "Usuario no encontrado"}), 404
+
+    try:
+        with open(LOG_FILE, 'r') as log_file:
+            lines = log_file.readlines()
+            # Filter lines for the specific user
+            user_movements = [line.strip() for line in lines if line.startswith(f"[{time}") and username in line]
+        return jsonify({"movimientos": user_movements}), 200
+    except FileNotFoundError:
+        logger.error(f"Archivo de log no encontrado: {LOG_FILE}")
+        return jsonify({"error": "Archivo de movimientos no encontrado"}), 404
+    except Exception as e:
+        logger.error(f"Error al leer los movimientos para {username}: {str(e)}")
+        return jsonify({"error": "Error al leer los movimientos"}), 500
+
 if __name__ == '__main__':
     if not os.path.exists("saldo/database"):
         os.makedirs("saldo/database")
